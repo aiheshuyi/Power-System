@@ -1,0 +1,196 @@
+/* 应用基本样式 */
+.app-container {
+  min-height: 100vh;
+}
+
+/* 侧边栏卡片样式 */
+.sidebar-card {
+  margin-bottom: 16px;
+}
+
+.sidebar-card .ant-card-head {
+  min-height: 48px;
+  padding: 0 16px;
+}
+
+.sidebar-card .ant-card-body {
+  padding: 16px;
+}
+
+/* 图表容器样式 */
+.chart-container {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.chart-container .ant-card-body {
+  padding: 0;
+}
+
+/* 暗色主题下的图表容器 */
+[data-theme="dark"] .chart-container {
+  background: #1f1f1f;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+/* 确保图表有足够的空间 */
+.chart-container .echarts-for-react {
+  min-height: 500px;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .chart-container .echarts-for-react {
+    min-height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .chart-container .echarts-for-react {
+    min-height: 300px;
+  }
+}
+
+.chart-container .ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 0 20px;
+}
+
+.chart-container .ant-card-body {
+  padding: 20px;
+}
+
+/* 统计容器样式 */
+.stats-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin: 16px;
+}
+
+.stats-container .ant-card-head {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 0 20px;
+}
+
+.stats-container .ant-card-body {
+  padding: 20px;
+}
+
+/* 加载容器样式 */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  flex-direction: column;
+}
+
+/* 错误容器样式 */
+.error-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  flex-direction: column;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .chart-container,
+  .stats-container {
+    margin: 8px;
+    padding: 16px;
+  }
+  
+  .sidebar-card {
+    margin-bottom: 12px;
+  }
+}
+
+/* 暗色主题适配 */
+[data-theme='dark'] .chart-container,
+[data-theme='dark'] .stats-container {
+  background: #1f1f1f;
+  border: 1px solid #303030;
+}
+
+[data-theme='dark'] .chart-container .ant-card-head,
+[data-theme='dark'] .stats-container .ant-card-head {
+  border-bottom-color: #303030;
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 暗色主题滚动条 */
+[data-theme='dark'] ::-webkit-scrollbar-track {
+  background: #2f2f2f;
+}
+
+[data-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: #555;
+}
+
+[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+  background: #777;
+}
+
+/* 自定义滚动条样式 */
+.sidebar-card .ant-card-body {
+  scrollbar-width: thin;
+  scrollbar-color: #ccc #f0f0f0;
+}
+
+.sidebar-card .ant-card-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-card .ant-card-body::-webkit-scrollbar-track {
+  background: #f0f0f0;
+  border-radius: 3px;
+}
+
+.sidebar-card .ant-card-body::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.sidebar-card .ant-card-body::-webkit-scrollbar-thumb:hover {
+  background: #999;
+}
+
+/* 暗色主题滚动条 */
+[data-theme="dark"] .sidebar-card .ant-card-body {
+  scrollbar-color: #666 #333;
+}
+
+[data-theme="dark"] .sidebar-card .ant-card-body::-webkit-scrollbar-track {
+  background: #333;
+}
+
+[data-theme="dark"] .sidebar-card .ant-card-body::-webkit-scrollbar-thumb {
+  background: #666;
+}
+
+[data-theme="dark"] .sidebar-card .ant-card-body::-webkit-scrollbar-thumb:hover {
+  background: #888;
+} 

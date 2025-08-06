@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV编码转换工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            margin: 20px 0;
+            background-color: #fafafa;
+        }
+        .upload-area.dragover {
+            border-color: #1890ff;
+            background-color: #e6f7ff;
+        }
+        .btn {
+            background-color: #1890ff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background-color: #40a9ff;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #f6ffed;
+            border: 1px solid #b7eb8f;
+            color: #52c41a;
+        }
+        .error {
+            background-color: #fff2f0;
+            border: 1px solid #ffccc7;
+            color: #ff4d4f;
+        }
+        .info {
+            background-color: #e6f7ff;
+            border: 1px solid #91d5ff;
+            color: #1890ff;
+        }
+        pre {
+            background-color: #f6f8fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CSV编码转换工具</h1>
+        
+        <div class="info">
+            <h3>使用说明：</h3>
+            <p>如果你的CSV文件出现"锟斤拷"乱码，请按以下步骤操作：</p>
+            <ol>
+                <li>上传你的CSV文件</li>
+                <li>工具会自动检测编码问题</li>
+                <li>下载转换后的UTF-8编码文件</li>
+                <li>将转换后的文件放到public目录下替换原文件</li>
+            </ol>
+        </div>
+
+        <div class="upload-area" id="uploadArea">
+            <p>点击选择文件或拖拽文件到此区域</p>
+            <input type="file" id="fileInput" accept=".csv" style="display: none;">
+            <button class="btn" onclick="document.getElementById('fileInput').click()">选择CSV文件</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const resultDiv = document.getElementById('result');
+
+        // 拖拽功能
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            if (!file.name.toLowerCase().endsWith('.csv')) {
+                showResult('请选择CSV文件', 'error');
+                return;
+            }
+
+            showResult('正在处理文件...', 'info');
+
+            // 尝试多种编码方式
+            const encodings = ['UTF-8', 'GBK', 'GB2312', 'Big5', 'ISO-8859-1'];
+            let currentEncodingIndex = 0;
+
+            function tryNextEncoding() {
+                if (currentEncodingIndex >= encodings.length) {
+                    showResult('所有编码方式都尝试失败，请手动转换文件编码。', 'error');
+                    return;
+                }
+
+                const encoding = encodings[currentEncodingIndex];
+                showResult(`正在尝试 ${encoding} 编码...`, 'info');
+
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    const content = e.target.result;
+                    
+                    // 检查是否有乱码
+                    if (content.includes('锟斤拷') || content.includes('') || !content.includes('年')) {
+                        console.log(`${encoding} 编码仍有问题，尝试下一种编码...`);
+                        currentEncodingIndex++;
+                        tryNextEncoding();
+                        return;
+                    }
+                    
+                    showResult(`成功使用 ${encoding} 编码读取文件！`, 'success');
+                    
+                    // 显示文件内容预览
+                    showFilePreview(content);
+                    
+                    // 如果编码不是UTF-8，提供转换选项
+                    if (encoding !== 'UTF-8') {
+                        showResult(`检测到文件使用 ${encoding} 编码。建议转换为UTF-8编码以获得最佳兼容性。`, 'info');
+                        const convertBtn = document.createElement('button');
+                        convertBtn.textContent = '转换为UTF-8';
+                        convertBtn.className = 'btn';
+                        convertBtn.style.marginTop = '10px';
+                        convertBtn.onclick = () => {
+                            downloadFile(content, file.name.replace('.csv', '_utf8.csv'));
+                            showResult('已生成UTF-8编码的文件供下载。', 'success');
+                        };
+                        resultDiv.appendChild(convertBtn);
+                    }
+                };
+                
+                reader.onerror = function() {
+                    console.log(`${encoding} 编码读取失败，尝试下一种编码...`);
+                    currentEncodingIndex++;
+                    tryNextEncoding();
+                };
+                
+                reader.readAsText(file, encoding);
+            }
+
+            tryNextEncoding();
+        }
+
+        function fixEncoding(text) {
+            // 简单的编码修复尝试
+            // 这里可以添加更复杂的编码转换逻辑
+            return text;
+        }
+
+        function showResult(message, type) {
+            resultDiv.innerHTML = `<div class="result ${type}">${message}</div>`;
+        }
+
+        function showFilePreview(content) {
+            const preview = content.substring(0, 1000);
+            resultDiv.innerHTML += `
+                <div class="result info">
+                    <h4>文件内容预览（前1000字符）：</h4>
+                    <pre>${escapeHtml(preview)}</pre>
+                </div>
+            `;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function downloadFile(content, filename) {
+            const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html> 

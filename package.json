@@ -1,0 +1,82 @@
+{
+  "name": "power-system-visualization",
+  "version": "1.0.0",
+  "description": "现代化电力数据可视化网页应用",
+  "private": true,
+  "dependencies": {
+    "@types/lodash": "^4.14.202",
+    "@types/node": "^18.19.0",
+    "@types/papaparse": "^5.3.14",
+    "@types/react": "^18.2.45",
+    "@types/react-dom": "^18.2.18",
+    "antd": "^5.12.8",
+    "dayjs": "^1.11.10",
+    "echarts": "^5.4.3",
+    "echarts-for-react": "^3.0.2",
+    "lodash": "^4.17.21",
+    "papaparse": "^5.4.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-scripts": "5.0.1",
+    "typescript": "^4.9.5"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.6",
+    "@babel/plugin-transform-class-properties": "^7.23.6",
+    "@babel/plugin-transform-nullish-coalescing-operator": "^7.23.6",
+    "@babel/plugin-transform-numeric-separator": "^7.23.6",
+    "@babel/plugin-transform-optional-chaining": "^7.23.6",
+    "@babel/plugin-transform-private-methods": "^7.23.6",
+    "@babel/plugin-transform-private-property-in-object": "^7.23.6",
+    "@babel/preset-env": "^7.23.6",
+    "@babel/preset-react": "^7.23.6",
+    "@babel/preset-typescript": "^7.23.6"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  },
+  "overrides": {
+    "nth-check": "^2.1.1",
+    "postcss": "^8.4.31",
+    "webpack-dev-server": "^4.15.1",
+    "svgo": "^3.0.2",
+    "css-select": "^5.1.0",
+    "resolve-url-loader": "^5.0.0",
+    "@svgr/webpack": "^8.1.0",
+    "@svgr/plugin-svgo": "^8.1.0",
+    "react-scripts": {
+      "webpack": {
+        "resolve": {
+          "fallback": {
+            "crypto": false,
+            "stream": false,
+            "util": false,
+            "buffer": false,
+            "process": false
+          }
+        }
+      }
+    }
+  }
+}

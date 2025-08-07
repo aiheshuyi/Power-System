@@ -9,6 +9,12 @@
       }
     }
   ],
+  "rewrites": [
+    {
+      "source": "/22-25_All.csv",
+      "destination": "/22-25_All.csv"
+    }
+  ],
   "headers": [
     {
       "source": "/22-25_All.csv",

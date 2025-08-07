@@ -78,8 +78,7 @@ const App: React.FC = () => {
       const possiblePaths = [
         '/22-25_All.csv',
         './22-25_All.csv',
-        '/public/22-25_All.csv',
-        '/static/22-25_All.csv'
+        '/public/22-25_All.csv'
       ];
       
       let csvText = '';

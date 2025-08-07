@@ -100,17 +100,24 @@ export const validateData = (data: PowerData[]): { isValid: boolean; errors: str
   };
 };
 
-// 解析CSV文件
+// 解析CSV文件 - 修复编码问题
 export const parseCSVFile = (file: File): Promise<PowerData[]> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     
-    // 使用GB2312编码读取文件
-    reader.readAsText(file, 'GB2312');
+    // 直接使用UTF-8读取，因为文件已经转换
+    reader.readAsText(file, 'UTF-8');
     
     reader.onload = (event) => {
       try {
         const csvText = event.target?.result as string;
+        console.log('CSV文件内容前500字符:', csvText.substring(0, 500));
+        
+        // 检查是否有乱码
+        if (csvText.includes('锟斤拷') || csvText.includes('嚙踝蕭')) {
+          reject(new Error('检测到乱码字符，编码解析失败'));
+          return;
+        }
         
         // 使用Papa Parse解析CSV
         Papa.parse(csvText, {
@@ -717,6 +724,158 @@ export const validatePredictionData = (data: PowerData[]): { isValid: boolean; e
     if (dayAheadPriceRange.min < -1000 || dayAheadPriceRange.max > 10000) {
       errors.push(`日前价格预测数据范围异常: ${dayAheadPriceRange.min} ~ ${dayAheadPriceRange.max}`);
     }
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors
+  };
+}; 
+
+// 检查数据文件是否存在
+export const checkDataFileExists = async (): Promise<boolean> => {
+  try {
+    const response = await fetch('/22-25_All.csv', { method: 'HEAD' });
+    return response.ok;
+  } catch (error) {
+    console.error('检查数据文件失败:', error);
+    return false;
+  }
+};
+
+// 获取数据文件信息
+export const getDataFileInfo = async (): Promise<{ exists: boolean; size?: number }> => {
+  try {
+    const response = await fetch('/22-25_All.csv', { method: 'HEAD' });
+    if (response.ok) {
+      const size = response.headers.get('content-length');
+      return { exists: true, size: size ? parseInt(size) : undefined };
+    }
+    return { exists: false };
+  } catch (error) {
+    console.error('获取数据文件信息失败:', error);
+    return { exists: false };
+  }
+}; 
+
+// 尝试多种编码方式 - 增强版本
+function tryMultipleEncodings(uint8Array: Uint8Array): string | null {
+  const encodings = ['GBK', 'GB2312', 'UTF-8', 'Big5', 'GB18030'];
+  
+  console.log('开始尝试多种编码方式解析文件...');
+  console.log('文件大小:', uint8Array.length, '字节');
+  
+  // 检查BOM标记
+  if (uint8Array.length >= 3 && uint8Array[0] === 0xEF && uint8Array[1] === 0xBB && uint8Array[2] === 0xBF) {
+    console.log('检测到UTF-8 BOM标记');
+    try {
+      const decoder = new TextDecoder('UTF-8');
+      const text = decoder.decode(uint8Array.slice(3)); // 跳过BOM
+      if (!text.includes('锟斤拷') && !text.includes('嚙踝蕭')) {
+        console.log('成功使用UTF-8 BOM编码解析');
+        return text;
+      }
+    } catch (error) {
+      console.log('UTF-8 BOM编码解析失败:', error);
+    }
+  }
+  
+  for (const encoding of encodings) {
+    try {
+      console.log(`尝试使用 ${encoding} 编码解析...`);
+      const decoder = new TextDecoder(encoding);
+      const text = decoder.decode(uint8Array);
+      
+      // 检查是否包含乱码字符
+      const hasGarbledText = text.includes('锟斤拷') || text.includes('嚙踝蕭') || text.includes('');
+      
+      if (!hasGarbledText) {
+        // 进一步验证：检查是否包含中文字符
+        const hasChineseChars = /[\u4e00-\u9fff]/.test(text);
+        const hasValidHeaders = text.includes('月') && text.includes('日') && text.includes('时');
+        
+        if (hasChineseChars && hasValidHeaders) {
+          console.log(`成功使用 ${encoding} 编码解析`);
+          console.log('文件内容前200字符:', text.substring(0, 200));
+          return text;
+        } else {
+          console.log(`${encoding} 编码解析成功但缺少必要的中文字符或表头`);
+        }
+      } else {
+        console.log(`${encoding} 编码解析出现乱码，尝试下一种编码...`);
+        console.log('乱码示例:', text.substring(0, 100));
+      }
+    } catch (error) {
+      console.log(`${encoding} 编码解析失败:`, error);
+    }
+  }
+  
+  console.error('所有编码方式都尝试失败');
+  return null;
+}
+
+// 检测文件编码
+export const detectFileEncoding = (uint8Array: Uint8Array): string => {
+  // 检查BOM
+  if (uint8Array.length >= 3 && uint8Array[0] === 0xEF && uint8Array[1] === 0xBB && uint8Array[2] === 0xBF) {
+    return 'UTF-8';
+  }
+  
+  // 检查是否包含中文字符的字节序列
+  let hasChineseBytes = false;
+  for (let i = 0; i < Math.min(1000, uint8Array.length - 1); i++) {
+    if (uint8Array[i] >= 0x80 && uint8Array[i + 1] >= 0x80) {
+      hasChineseBytes = true;
+      break;
+    }
+  }
+  
+  if (hasChineseBytes) {
+    return 'GBK'; // 默认使用GBK
+  }
+  
+  return 'UTF-8';
+};
+
+// 转换编码
+export const convertEncoding = (uint8Array: Uint8Array, encoding: string): string => {
+  try {
+    const decoder = new TextDecoder(encoding);
+    return decoder.decode(uint8Array);
+  } catch (error) {
+    console.warn(`使用${encoding}编码转换失败:`, error);
+    return '';
+  }
+};
+
+// 验证文件内容
+export const validateFileContent = (csvText: string): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+  
+  // 检查是否为空
+  if (!csvText || csvText.trim().length === 0) {
+    errors.push('文件内容为空');
+    return { isValid: false, errors };
+  }
+  
+  // 检查是否包含乱码
+  if (csvText.includes('锟斤拷') || csvText.includes('嚙踝蕭')) {
+    errors.push('文件包含乱码字符');
+    return { isValid: false, errors };
+  }
+  
+  // 检查是否包含预期的列名
+  const expectedColumns = ['年', '月', '日', '时'];
+  for (const column of expectedColumns) {
+    if (!csvText.includes(column)) {
+      errors.push(`未找到预期列名: ${column}`);
+    }
+  }
+  
+  // 检查是否包含数据行
+  const lines = csvText.split('\n');
+  if (lines.length < 2) {
+    errors.push('文件行数不足，至少需要标题行和一行数据');
   }
   
   return {

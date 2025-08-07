@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>浏览器编码测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; }
+        .error { background-color: #f8d7da; }
+        .warning { background-color: #fff3cd; }
+        button { background-color: #007bff; color: white; border: none; padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background-color: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>浏览器CSV文件编码测试</h1>
+    <button onclick="testMethod1()">测试方法1: fetch文本</button>
+    <button onclick="testMethod2()">测试方法2: ArrayBuffer</button>
+    <button onclick="testMethod3()">测试方法3: 多编码</button>
+    <button onclick="clearResults()">清除结果</button>
+    <div id="results"></div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+        
+        function addResult(title, content, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-section ${type}`;
+            div.innerHTML = `<h4>${title}</h4><pre>${content}</pre>`;
+            resultsDiv.appendChild(div);
+        }
+        
+        function clearResults() {
+            resultsDiv.innerHTML = '';
+        }
+        
+        async function testMethod1() {
+            try {
+                const response = await fetch('/22-25_All.csv');
+                const text = await response.text();
+                const hasGarbledText = text.includes('锟斤拷') || text.includes('嚙踝蕭');
+                const hasExpectedColumns = text.includes('年') && text.includes('月') && text.includes('日');
+                
+                const result = `文件大小: ${text.length} 字符\n前100字符: ${text.substring(0, 100)}\n包含乱码: ${hasGarbledText ? '是' : '否'}\n包含预期列名: ${hasExpectedColumns ? '是' : '否'}`;
+                addResult('方法1: fetch文本', result, hasGarbledText ? 'error' : (hasExpectedColumns ? 'success' : 'warning'));
+            } catch (error) {
+                addResult('方法1: fetch文本', `错误: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testMethod2() {
+            try {
+                const response = await fetch('/22-25_All.csv');
+                const arrayBuffer = await response.arrayBuffer();
+                const uint8Array = new Uint8Array(arrayBuffer);
+                const text = new TextDecoder('UTF-8').decode(uint8Array);
+                
+                const hasGarbledText = text.includes('锟斤拷') || text.includes('嚙踝蕭');
+                const hasExpectedColumns = text.includes('年') && text.includes('月') && text.includes('日');
+                
+                const result = `文件大小: ${uint8Array.length} 字节\n前100字符: ${text.substring(0, 100)}\n包含乱码: ${hasGarbledText ? '是' : '否'}\n包含预期列名: ${hasExpectedColumns ? '是' : '否'}`;
+                addResult('方法2: ArrayBuffer', result, hasGarbledText ? 'error' : (hasExpectedColumns ? 'success' : 'warning'));
+            } catch (error) {
+                addResult('方法2: ArrayBuffer', `错误: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testMethod3() {
+            try {
+                const response = await fetch('/22-25_All.csv');
+                const arrayBuffer = await response.arrayBuffer();
+                const uint8Array = new Uint8Array(arrayBuffer);
+                
+                const encodings = ['UTF-8', 'GBK', 'GB2312', 'Big5'];
+                let bestResult = null;
+                let bestEncoding = null;
+                
+                for (const encoding of encodings) {
+                    try {
+                        const decoder = new TextDecoder(encoding);
+                        const text = decoder.decode(uint8Array);
+                        
+                        const hasGarbledText = text.includes('锟斤拷') || text.includes('嚙踝蕭');
+                        const hasExpectedColumns = text.includes('年') && text.includes('月') && text.includes('日');
+                        
+                        if (!hasGarbledText && hasExpectedColumns) {
+                            bestResult = text;
+                            bestEncoding = encoding;
+                            break;
+                        }
+                    } catch (error) {
+                        console.log(`${encoding} 编码失败:`, error);
+                    }
+                }
+                
+                const result = bestResult ? 
+                    `找到最佳编码: ${bestEncoding}\n前100字符: ${bestResult.substring(0, 100)}` :
+                    `所有编码都尝试失败`;
+                
+                addResult('方法3: 多编码', result, bestResult ? 'success' : 'error');
+            } catch (error) {
+                addResult('方法3: 多编码', `错误: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html> 

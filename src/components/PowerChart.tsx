@@ -97,11 +97,22 @@ const PowerChart: React.FC<PowerChartProps> = ({
 
   if (loading) {
     return (
-      <Card className="chart-container">
-        <div className="loading-container">
-          <Spin size="large" tip="正在加载数据..." />
+      <div style={{ 
+        display: 'flex', 
+        flexDirection: 'column',
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        height: '400px',
+        color: theme === 'dark' ? '#fff' : '#333'
+      }}>
+        <Spin size="large" />
+        <div style={{ marginTop: '16px' }}>
+          正在加载电力数据...
         </div>
-      </Card>
+        <div style={{ marginTop: '8px', fontSize: '12px', color: theme === 'dark' ? '#ccc' : '#666' }}>
+          数据范围：2022.1.1 ~ 2025.8.31
+        </div>
+      </div>
     );
   }
 

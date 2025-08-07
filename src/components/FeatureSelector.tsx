@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Card, Checkbox, Space, Button, Tag, message } from 'antd';
+import { Card, Checkbox, Space, Button } from 'antd';
 import { featureLabels } from '../utils/chartUtils';
 import { TimeRange } from '../types';
-import dayjs from 'dayjs';
 
 interface FeatureSelectorProps {
   selectedFeatures: string[];
@@ -26,25 +25,9 @@ const FeatureSelector: React.FC<FeatureSelectorProps> = ({
     forecast: true // 预测分组默认展开
   });
 
-  // 预测数据的时间范围 - 更新为全范围
-  const forecastDataRange = {
-    start: '2022-01-01',
-    end: '2025-08-31'
-  };
 
-  // 检查当前时间范围是否在预测数据范围内
-  const isInForecastRange = () => {
-    if (!timeRange) return false;
-    const currentStart = dayjs(timeRange.start);
-    const currentEnd = dayjs(timeRange.end);
-    const forecastStart = dayjs(forecastDataRange.start);
-    const forecastEnd = dayjs(forecastDataRange.end);
-    
-    return currentStart.isSameOrAfter(forecastStart, 'day') && 
-           currentEnd.isSameOrBefore(forecastEnd, 'day');
-  };
 
-  // 检查是否选择了预测特征（已移除未使用的变量）
+
 
   // 特征分组 - 使用实际CSV文件的中文字段名
   const featureGroups = {
@@ -83,9 +66,6 @@ const FeatureSelector: React.FC<FeatureSelectorProps> = ({
   };
 
   const handleFeatureToggle = (feature: string, checked: boolean) => {
-    // 检查是否是预测特征
-    const isForecastFeature = ['价格差值预测', '日前价格预测'].includes(feature);
-    
     if (checked) {
       const newFeatures = [...selectedFeatures, feature];
       onFeatureChange(newFeatures);
@@ -146,7 +126,6 @@ const FeatureSelector: React.FC<FeatureSelectorProps> = ({
         {Object.entries(featureGroups).map(([groupKey, group]) => {
           const selectionStatus = getGroupSelectionStatus(groupKey);
           const isExpanded = expandedGroups[groupKey];
-          const isForecastGroup = groupKey === 'forecast';
           
           return (
             <div key={groupKey} style={{ border: '1px solid #d9d9d9', borderRadius: '6px', padding: '8px' }}>

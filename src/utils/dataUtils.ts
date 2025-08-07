@@ -758,61 +758,7 @@ export const getDataFileInfo = async (): Promise<{ exists: boolean; size?: numbe
   }
 }; 
 
-// 尝试多种编码方式 - 增强版本
-function tryMultipleEncodings(uint8Array: Uint8Array): string | null {
-  const encodings = ['GBK', 'GB2312', 'UTF-8', 'Big5', 'GB18030'];
-  
-  console.log('开始尝试多种编码方式解析文件...');
-  console.log('文件大小:', uint8Array.length, '字节');
-  
-  // 检查BOM标记
-  if (uint8Array.length >= 3 && uint8Array[0] === 0xEF && uint8Array[1] === 0xBB && uint8Array[2] === 0xBF) {
-    console.log('检测到UTF-8 BOM标记');
-    try {
-      const decoder = new TextDecoder('UTF-8');
-      const text = decoder.decode(uint8Array.slice(3)); // 跳过BOM
-      if (!text.includes('锟斤拷') && !text.includes('嚙踝蕭')) {
-        console.log('成功使用UTF-8 BOM编码解析');
-        return text;
-      }
-    } catch (error) {
-      console.log('UTF-8 BOM编码解析失败:', error);
-    }
-  }
-  
-  for (const encoding of encodings) {
-    try {
-      console.log(`尝试使用 ${encoding} 编码解析...`);
-      const decoder = new TextDecoder(encoding);
-      const text = decoder.decode(uint8Array);
-      
-      // 检查是否包含乱码字符
-      const hasGarbledText = text.includes('锟斤拷') || text.includes('嚙踝蕭') || text.includes('');
-      
-      if (!hasGarbledText) {
-        // 进一步验证：检查是否包含中文字符
-        const hasChineseChars = /[\u4e00-\u9fff]/.test(text);
-        const hasValidHeaders = text.includes('月') && text.includes('日') && text.includes('时');
-        
-        if (hasChineseChars && hasValidHeaders) {
-          console.log(`成功使用 ${encoding} 编码解析`);
-          console.log('文件内容前200字符:', text.substring(0, 200));
-          return text;
-        } else {
-          console.log(`${encoding} 编码解析成功但缺少必要的中文字符或表头`);
-        }
-      } else {
-        console.log(`${encoding} 编码解析出现乱码，尝试下一种编码...`);
-        console.log('乱码示例:', text.substring(0, 100));
-      }
-    } catch (error) {
-      console.log(`${encoding} 编码解析失败:`, error);
-    }
-  }
-  
-  console.error('所有编码方式都尝试失败');
-  return null;
-}
+
 
 // 检测文件编码
 export const detectFileEncoding = (uint8Array: Uint8Array): string => {

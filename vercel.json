@@ -9,16 +9,6 @@
       }
     }
   ],
-  "routes": [
-    {
-      "src": "/22-25_All.csv",
-      "dest": "/22-25_All.csv"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ],
   "headers": [
     {
       "source": "/22-25_All.csv",

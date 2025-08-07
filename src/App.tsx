@@ -6,7 +6,7 @@ import TimeSelector from './components/TimeSelector';
 import FeatureSelector from './components/FeatureSelector';
 import PowerChart from './components/PowerChart';
 import { PowerData, TimeRange } from './types';
-import { filterDataByTimeRange, parseCSVFile, validateData, validateParsedData, getActualDataRange, validatePredictionData, detectFileEncoding, convertEncoding, validateFileContent } from './utils/dataUtils';
+import { filterDataByTimeRange, parseCSVFile, validateData, validateParsedData, getActualDataRange, checkFileExists, getFileInfo } from './utils/dataUtils';
 import './App.css';
 
 const { Header, Sider, Content } = Layout;
@@ -60,7 +60,7 @@ const App: React.FC = () => {
     }, 3000);
   }, [lastSuccessMessage]);
 
-  // 自动加载CSV文件 - 确保只调用一次成功消息
+  // 自动加载CSV文件 - 修复Vercel部署问题
   const loadCSVData = useCallback(async () => {
     // 防止重复加载
     if (dataLoaded) {
@@ -74,24 +74,90 @@ const App: React.FC = () => {
     try {
       console.log('开始自动加载CSV文件...');
       
-      // 方法1：使用fetch直接获取文本
+      // 尝试多个可能的文件路径
+      const possiblePaths = [
+        '/22-25_All.csv',
+        './22-25_All.csv',
+        '/public/22-25_All.csv',
+        '/static/22-25_All.csv'
+      ];
+      
       let csvText = '';
-      try {
-        console.log('尝试方法1：直接fetch文本...');
-        const response = await fetch('/22-25_All.csv');
-        if (!response.ok) {
-          throw new Error(`HTTP错误: ${response.status} - ${response.statusText}`);
+      let successfulPath = '';
+      
+      // 方法1：尝试多个路径
+      for (const path of possiblePaths) {
+        try {
+          console.log(`尝试路径: ${path}`);
+          
+          // 检查文件是否存在
+          const fileExists = await checkFileExists(path);
+          console.log(`路径 ${path} 存在检查:`, fileExists);
+          
+          if (!fileExists) {
+            console.log(`路径 ${path} 文件不存在，跳过`);
+            continue;
+          }
+          
+          // 获取文件信息
+          const fileInfo = await getFileInfo(path);
+          console.log(`路径 ${path} 文件信息:`, fileInfo);
+          
+          const response = await fetch(path);
+          
+          if (!response.ok) {
+            console.log(`路径 ${path} 返回状态: ${response.status}`);
+            continue;
+          }
+          
+          const contentType = response.headers.get('content-type');
+          console.log(`路径 ${path} 内容类型: ${contentType}`);
+          
+          const text = await response.text();
+          console.log(`路径 ${path} 内容前100字符:`, text.substring(0, 100));
+          
+          // 检查是否返回了HTML而不是CSV
+          if (text.includes('<!doctype html>') || text.includes('<html')) {
+            console.log(`路径 ${path} 返回HTML，跳过`);
+            continue;
+          }
+          
+          // 检查是否包含CSV内容
+          if (text.includes('年') && text.includes('月') && text.includes('日')) {
+            csvText = text;
+            successfulPath = path;
+            console.log(`成功使用路径: ${path}`);
+            break;
+          } else {
+            console.log(`路径 ${path} 内容格式不正确`);
+          }
+        } catch (error) {
+          console.log(`路径 ${path} 访问失败:`, error);
         }
-        csvText = await response.text();
-        console.log('方法1成功，文件内容前100字符:', csvText.substring(0, 100));
-      } catch (error) {
-        console.log('方法1失败，尝试方法2...', error);
       }
       
-      // 方法2：如果方法1失败，使用ArrayBuffer
-      if (!csvText || csvText.includes('锟斤拷')) {
+      // 方法2：如果所有路径都失败，尝试其他方法
+      if (!csvText) {
         try {
-          console.log('尝试方法2：使用ArrayBuffer...');
+          console.log('尝试方法2：使用相对路径...');
+          const response = await fetch('22-25_All.csv');
+          if (response.ok) {
+            const text = await response.text();
+            if (!text.includes('<!doctype html>') && text.includes('年')) {
+              csvText = text;
+              successfulPath = '22-25_All.csv';
+              console.log('方法2成功');
+            }
+          }
+        } catch (error) {
+          console.log('方法2失败:', error);
+        }
+      }
+      
+      // 方法3：如果前两种方法都失败，尝试ArrayBuffer方法
+      if (!csvText) {
+        try {
+          console.log('尝试方法3：使用ArrayBuffer...');
           const response = await fetch('/22-25_All.csv');
           if (!response.ok) {
             throw new Error(`HTTP错误: ${response.status} - ${response.statusText}`);
@@ -111,16 +177,17 @@ const App: React.FC = () => {
             csvText = new TextDecoder('UTF-8').decode(uint8Array);
           }
           
-          console.log('方法2成功，文件内容前100字符:', csvText.substring(0, 100));
+          console.log('方法3成功，文件内容前100字符:', csvText.substring(0, 100));
+          successfulPath = '/22-25_All.csv (ArrayBuffer)';
         } catch (error) {
-          console.log('方法2失败，尝试方法3...', error);
+          console.log('方法3失败:', error);
         }
       }
       
-      // 方法3：如果前两种方法都失败，尝试其他编码
+      // 方法4：如果前三种方法都失败，尝试其他编码
       if (!csvText || csvText.includes('锟斤拷')) {
         try {
-          console.log('尝试方法3：尝试其他编码...');
+          console.log('尝试方法4：尝试其他编码...');
           const response = await fetch('/22-25_All.csv');
           if (!response.ok) {
             throw new Error(`HTTP错误: ${response.status} - ${response.statusText}`);
@@ -139,6 +206,7 @@ const App: React.FC = () => {
               
               if (!testText.includes('锟斤拷') && !testText.includes('嚙踝蕭')) {
                 csvText = testText;
+                successfulPath = `/22-25_All.csv (${encoding})`;
                 console.log(`成功使用 ${encoding} 编码`);
                 break;
               } else {
@@ -149,13 +217,17 @@ const App: React.FC = () => {
             }
           }
         } catch (error) {
-          console.log('方法3失败:', error);
+          console.log('方法4失败:', error);
         }
       }
       
       // 检查最终结果
       if (!csvText) {
-        throw new Error('无法读取CSV文件内容');
+        throw new Error(`无法访问CSV文件。尝试的路径: ${possiblePaths.join(', ')}`);
+      }
+      
+      if (csvText.includes('<!doctype html>') || csvText.includes('<html')) {
+        throw new Error('服务器返回HTML页面而不是CSV文件，请检查文件路径');
       }
       
       if (csvText.includes('锟斤拷') || csvText.includes('嚙踝蕭')) {
@@ -168,6 +240,7 @@ const App: React.FC = () => {
       }
       
       console.log('文件读取成功，开始解析...');
+      console.log('成功路径:', successfulPath);
       console.log('文件内容前500字符:', csvText.substring(0, 500));
       
       // 创建File对象用于解析
@@ -239,7 +312,7 @@ const App: React.FC = () => {
     return () => {
       console.log('=== App组件卸载 ===');
     };
-  }, []); // 空依赖数组，确保只执行一次
+  }, [dataLoaded, loadCSVData]); // 添加依赖，但loadCSVData已经用useCallback包装
 
   // 组件卸载时清理定时器
   useEffect(() => {

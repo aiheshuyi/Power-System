@@ -882,4 +882,35 @@ export const validateFileContent = (csvText: string): { isValid: boolean; errors
     isValid: errors.length === 0,
     errors
   };
+};
+
+// 检查文件是否存在（通用版本）
+export const checkFileExists = async (filePath: string): Promise<boolean> => {
+  try {
+    const response = await fetch(filePath, { method: 'HEAD' });
+    return response.ok;
+  } catch (error) {
+    console.error(`检查文件 ${filePath} 失败:`, error);
+    return false;
+  }
+};
+
+// 获取文件信息（通用版本）
+export const getFileInfo = async (filePath: string): Promise<{ exists: boolean; size?: number; contentType?: string }> => {
+  try {
+    const response = await fetch(filePath, { method: 'HEAD' });
+    if (response.ok) {
+      const size = response.headers.get('content-length');
+      const contentType = response.headers.get('content-type');
+      return { 
+        exists: true, 
+        size: size ? parseInt(size) : undefined,
+        contentType: contentType || undefined
+      };
+    }
+    return { exists: false };
+  } catch (error) {
+    console.error(`获取文件信息 ${filePath} 失败:`, error);
+    return { exists: false };
+  }
 }; 

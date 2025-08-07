@@ -2,6 +2,7 @@
   "name": "power-system-visualization",
   "version": "1.0.0",
   "description": "现代化电力数据可视化网页应用",
+  "homepage": ".",
   "private": true,
   "dependencies": {
     "@types/lodash": "^4.14.202",

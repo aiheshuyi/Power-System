@@ -35,19 +35,19 @@
 }
 
 /* 确保图表有足够的空间 */
-.chart-container .echarts-for-react {
+.chart-container .power-chart-echarts {
   min-height: 500px;
 }
 
 /* 响应式设计 */
 @media (max-width: 1200px) {
-  .chart-container .echarts-for-react {
+  .chart-container .power-chart-echarts {
     min-height: 400px;
   }
 }
 
 @media (max-width: 768px) {
-  .chart-container .echarts-for-react {
+  .chart-container .power-chart-echarts {
     min-height: 300px;
   }
 }
@@ -59,6 +59,8 @@
 
 .chart-container .ant-card-body {
   padding: 20px;
+  height: 100%;
+  min-height: 0;
 }
 
 /* 统计容器样式 */
@@ -83,7 +85,7 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 400px;
+  min-height: 0;
   flex-direction: column;
 }
 
@@ -92,8 +94,12 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 400px;
+  min-height: 0;
   flex-direction: column;
+}
+
+.chart-state-full {
+  height: 100%;
 }
 
 /* 响应式设计 */

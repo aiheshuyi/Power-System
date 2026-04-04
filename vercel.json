@@ -1,27 +1,11 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "build"
-      }
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/22-25_All.csv",
-      "destination": "/22-25_All.csv"
-    }
-  ],
   "headers": [
     {
       "source": "/22-25_All.csv",
       "headers": [
         {
           "key": "Content-Type",
-          "value": "text/csv"
+          "value": "text/csv; charset=utf-8"
         },
         {
           "key": "Access-Control-Allow-Origin",
@@ -29,8 +13,5 @@
         }
       ]
     }
-  ],
-  "env": {
-    "CI": "false"
-  }
-} 
+  ]
+}

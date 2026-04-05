@@ -1,7 +1,7 @@
-import { PowerData, ChartConfig } from '../types';
+
 
 // 特征标签映射 - 使用实际CSV文件的中文列名
-export const featureLabels: Record<string, string> = {
+export const featureLabels = {
   // 实际数据字段
   '实际直调负荷': '实际直调负荷',
   '实际联络线受电负荷': '实际联络线受电负荷',
@@ -41,30 +41,30 @@ export const featureLabels: Record<string, string> = {
 
 // 图表颜色配置
 export const chartColors = [
-  '#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de',
-  '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc', '#1890ff',
-  '#52c41a', '#faad14', '#f5222d', '#722ed1', '#13c2c2',
-  '#eb2f96', '#fa8c16', '#a0d911', '#2f54eb', '#fa541c'
-];
+'#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de',
+'#3ba272', '#fc8452', '#9a60b4', '#ea7ccc', '#1890ff',
+'#52c41a', '#faad14', '#f5222d', '#722ed1', '#13c2c2',
+'#eb2f96', '#fa8c16', '#a0d911', '#2f54eb', '#fa541c'];
+
 
 // 生成图表配置
-export const generateChartConfig = (data: PowerData[], selectedFeatures: string[], theme: 'light' | 'dark' = 'light', timeRangeType?: string): ChartConfig => {
+export const generateChartConfig = (data, selectedFeatures, theme = 'light', timeRangeType) => {
   console.log('=== 图表配置生成开始 ===');
   console.log('输入数据:', { dataLength: data.length, selectedFeatures, timeRangeType });
-  
+
   if (data.length === 0) {
     console.log('数据为空，返回空配置');
     return { title: '电力数据可视化', xAxis: [], series: [] };
   }
-  
+
   if (selectedFeatures.length === 0) {
     console.log('未选择特征，返回空配置');
     return { title: '电力数据可视化', xAxis: [], series: [] };
   }
-  
+
   // 根据时间范围类型和数据量动态调整最大数据点数量
   let maxDataPoints = data.length;
-  
+
   if (timeRangeType === 'year') {
     // 年度数据：允许显示完整的一年数据
     maxDataPoints = Math.min(data.length, 8760); // 一年的小时数
@@ -83,20 +83,20 @@ export const generateChartConfig = (data: PowerData[], selectedFeatures: string[
     maxDataPoints = 3000;
     console.log(`数据量较大(${data.length})，限制为3000个数据点`);
   }
-  
+
   // 生成X轴标签 - 保持完整时间信息用于tooltip
-  const xAxis = data.slice(0, maxDataPoints).map(item => {
+  const xAxis = data.slice(0, maxDataPoints).map((item) => {
     const timeLabel = `${item.month.toString().padStart(2, '0')}-${item.day.toString().padStart(2, '0')} ${item.hour.toString().padStart(2, '0')}:00`;
     return timeLabel;
   });
-  
+
   // 为季度和年度生成月份刻度位置
-  let monthTickPositions: number[] = [];
-  let monthTickLabels: string[] = [];
-  
+  let monthTickPositions = [];
+  let monthTickLabels = [];
+
   if (timeRangeType === 'quarter' || timeRangeType === 'year') {
-    const monthPositions: Record<string, number> = {};
-    
+    const monthPositions = {};
+
     data.slice(0, maxDataPoints).forEach((item, index) => {
       const monthKey = `${item.year}-${item.month.toString().padStart(2, '0')}`;
       if (!monthPositions[monthKey]) {
@@ -105,45 +105,45 @@ export const generateChartConfig = (data: PowerData[], selectedFeatures: string[
         monthTickLabels.push(`${item.month}月`);
       }
     });
-    
-    console.log('月份刻度生成:', { 
-      monthPositions, 
-      monthTickPositions, 
+
+    console.log('月份刻度生成:', {
+      monthPositions,
+      monthTickPositions,
       monthTickLabels,
       totalPositions: monthTickPositions.length,
       totalLabels: monthTickLabels.length,
       maxDataPoints
     });
   }
-  
+
   // 定义价格相关特征
   const priceFeatures = ['现货价格', '日前价格', '价格差值', '价格差值预测', '日前价格预测'];
-  
+
   // 检查是否需要双Y轴
-  const hasPriceFeatures = selectedFeatures.some(feature => priceFeatures.includes(feature));
-  const hasNonPriceFeatures = selectedFeatures.some(feature => !priceFeatures.includes(feature));
+  const hasPriceFeatures = selectedFeatures.some((feature) => priceFeatures.includes(feature));
+  const hasNonPriceFeatures = selectedFeatures.some((feature) => !priceFeatures.includes(feature));
   const useDualYAxis = hasPriceFeatures && hasNonPriceFeatures;
-  
+
   console.log('双Y轴检查:', { hasPriceFeatures, hasNonPriceFeatures, useDualYAxis });
   console.log('价格特征:', priceFeatures);
-  console.log('选中的价格特征:', selectedFeatures.filter(f => priceFeatures.includes(f)));
-  
+  console.log('选中的价格特征:', selectedFeatures.filter((f) => priceFeatures.includes(f)));
+
   // 生成数据系列
   const series = selectedFeatures.map((feature, index) => {
     console.log(`处理特征: ${feature}`);
-    
+
     const seriesData = data.slice(0, maxDataPoints).map((item, dataIndex) => {
-      const value = (item as any)[feature];
+      const value = item[feature];
       const numericValue = typeof value === 'number' && !isNaN(value) ? value : 0;
-      
+
       // 价格差值保留两位小数
       if (feature === '价格差值') {
         return parseFloat(numericValue.toFixed(2));
       }
-      
+
       return numericValue;
     });
-    
+
     // 确定Y轴索引
     let yAxisIndex = 0; // 默认使用左侧Y轴
     if (useDualYAxis && priceFeatures.includes(feature)) {
@@ -152,34 +152,34 @@ export const generateChartConfig = (data: PowerData[], selectedFeatures: string[
     } else {
       console.log(`特征 ${feature} 使用左侧Y轴 (索引: ${yAxisIndex})`);
     }
-    
+
     // 验证数据范围
     const minValue = Math.min(...seriesData);
     const maxValue = Math.max(...seriesData);
     console.log(`特征 ${feature} 数据范围: ${minValue} ~ ${maxValue}, 数据点数量: ${seriesData.length}`);
-    
+
     return {
       name: featureLabels[feature] || feature,
       data: seriesData,
-      type: 'line' as const,
+      type: 'line',
       smooth: true,
       yAxisIndex: yAxisIndex
     };
   });
-  
+
   // 分离左右Y轴的系列
-  const leftYAxisSeries = useDualYAxis ? 
-    selectedFeatures.filter(feature => !priceFeatures.includes(feature)) : 
-    selectedFeatures;
-  const rightYAxisSeries = useDualYAxis ? 
-    selectedFeatures.filter(feature => priceFeatures.includes(feature)) : 
-    [];
-  
+  const leftYAxisSeries = useDualYAxis ?
+  selectedFeatures.filter((feature) => !priceFeatures.includes(feature)) :
+  selectedFeatures;
+  const rightYAxisSeries = useDualYAxis ?
+  selectedFeatures.filter((feature) => priceFeatures.includes(feature)) :
+  [];
+
   console.log('Y轴系列分配:', { leftYAxisSeries, rightYAxisSeries });
   console.log('生成的系列数量:', series.length);
   console.log('最终数据点数量:', maxDataPoints);
   console.log('=== 图表配置生成结束 ===');
-  
+
   return {
     title: '电力数据可视化',
     xAxis,
@@ -194,7 +194,7 @@ export const generateChartConfig = (data: PowerData[], selectedFeatures: string[
 };
 
 // 生成ECharts配置选项
-export const generateEChartsOption = (chartConfig: ChartConfig, theme: 'light' | 'dark' = 'light') => {
+export const generateEChartsOption = (chartConfig, theme = 'light') => {
   console.log('=== ECharts配置生成开始 ===');
   console.log('图表配置:', {
     title: chartConfig.title,
@@ -204,11 +204,11 @@ export const generateEChartsOption = (chartConfig: ChartConfig, theme: 'light' |
     timeRangeType: chartConfig.timeRangeType,
     monthTickPositions: chartConfig.monthTickPositions
   });
-  
+
   const isDark = theme === 'dark';
-  
+
   // 基础配置
-  const option: any = {
+  const option = {
     title: {
       text: chartConfig.title,
       left: 'center',
@@ -225,11 +225,11 @@ export const generateEChartsOption = (chartConfig: ChartConfig, theme: 'light' |
       textStyle: {
         color: isDark ? '#fff' : '#333'
       },
-      formatter: function(params: any) {
+      formatter: function (params) {
         // 确保tooltip显示完整的时间信息
         const timeValue = params[0].axisValue || '';
         let result = `${timeValue}<br/>`;
-        params.forEach((param: any) => {
+        params.forEach((param) => {
           let value = param.value;
           // 价格差值保留两位小数
           if (param.seriesName.includes('价格差值')) {
@@ -241,7 +241,7 @@ export const generateEChartsOption = (chartConfig: ChartConfig, theme: 'light' |
       }
     },
     legend: {
-      data: chartConfig.series.map(s => s.name),
+      data: chartConfig.series.map((s) => s.name),
       top: 50, // 增加与标题的距离
       left: 'center',
       textStyle: {
@@ -260,12 +260,12 @@ export const generateEChartsOption = (chartConfig: ChartConfig, theme: 'light' |
       containLabel: true
     }
   };
-  
+
   // 根据时间范围类型配置X轴
   if (chartConfig.timeRangeType === 'quarter' || chartConfig.timeRangeType === 'year') {
     // 季度和年度：显示月份刻度
     option.xAxis = {
-      type: 'category' as const,
+      type: 'category',
       data: chartConfig.xAxis,
       axisLabel: {
         color: isDark ? '#fff' : '#333',
@@ -273,7 +273,7 @@ export const generateEChartsOption = (chartConfig: ChartConfig, theme: 'light' |
         fontSize: 12,
         show: true,
         interval: 0,
-        formatter: function(value: string, index: number) {
+        formatter: function (value, index) {
           // 只显示月份刻度位置的标签
           if (chartConfig.monthTickPositions && chartConfig.monthTickPositions.includes(index)) {
             const monthIndex = chartConfig.monthTickPositions.indexOf(index);
@@ -291,7 +291,7 @@ export const generateEChartsOption = (chartConfig: ChartConfig, theme: 'light' |
         show: true,
         alignWithLabel: true,
         interval: 0,
-        formatter: function(value: string, index: number) {
+        formatter: function (value, index) {
           // 只显示月份刻度位置的刻度
           if (chartConfig.monthTickPositions && chartConfig.monthTickPositions.includes(index)) {
             return '|';
@@ -303,7 +303,7 @@ export const generateEChartsOption = (chartConfig: ChartConfig, theme: 'light' |
   } else {
     // 单日、月度、任意选择：显示正常的时间刻度
     option.xAxis = {
-      type: 'category' as const,
+      type: 'category',
       data: chartConfig.xAxis,
       axisLabel: {
         color: isDark ? '#fff' : '#333',
@@ -323,7 +323,7 @@ export const generateEChartsOption = (chartConfig: ChartConfig, theme: 'light' |
       }
     };
   }
-  
+
   // 根据是否使用双Y轴配置不同的Y轴
   if (chartConfig.useDualYAxis) {
     // 双Y轴配置
@@ -332,98 +332,98 @@ export const generateEChartsOption = (chartConfig: ChartConfig, theme: 'light' |
       color: isDark ? '#ccc' : '#666',
       fontSize: 11
     };
-    
+
     // 计算左右Y轴的数据范围
-    const leftAxisData = chartConfig.series
-      .filter(s => s.yAxisIndex === 0)
-      .flatMap(s => s.data);
-    const rightAxisData = chartConfig.series
-      .filter(s => s.yAxisIndex === 1)
-      .flatMap(s => s.data);
-    
+    const leftAxisData = chartConfig.series.
+    filter((s) => s.yAxisIndex === 0).
+    flatMap((s) => s.data);
+    const rightAxisData = chartConfig.series.
+    filter((s) => s.yAxisIndex === 1).
+    flatMap((s) => s.data);
+
     const leftMin = Math.min(...leftAxisData);
     const leftMax = Math.max(...leftAxisData);
     const rightMin = Math.min(...rightAxisData);
     const rightMax = Math.max(...rightAxisData);
-    
+
     console.log('Y轴数据范围:', {
       leftAxis: { min: leftMin, max: leftMax },
       rightAxis: { min: rightMin, max: rightMax }
     });
-    
+
     option.yAxis = [
-      {
-        // 左侧Y轴 - 用于非价格数据
-        type: 'value',
-        position: 'left',
-        name: '负荷/发电量',
-        nameLocation: 'middle',
-        nameGap: 50,
-        nameTextStyle: {
-          color: isDark ? '#fff' : '#333',
-          fontSize: 12,
-          fontWeight: 'bold'
-        },
-        axisLabel: {
-          color: isDark ? '#fff' : '#333',
-          fontSize: 10,
-          margin: 8,
-          formatter: function(value: number) {
-            if (value >= 10000) {
-              return (value / 10000).toFixed(1) + '万';
-            }
-            return value.toFixed(0);
+    {
+      // 左侧Y轴 - 用于非价格数据
+      type: 'value',
+      position: 'left',
+      name: '负荷/发电量',
+      nameLocation: 'middle',
+      nameGap: 50,
+      nameTextStyle: {
+        color: isDark ? '#fff' : '#333',
+        fontSize: 12,
+        fontWeight: 'bold'
+      },
+      axisLabel: {
+        color: isDark ? '#fff' : '#333',
+        fontSize: 10,
+        margin: 8,
+        formatter: function (value) {
+          if (value >= 10000) {
+            return (value / 10000).toFixed(1) + '万';
           }
-        },
-        axisLine: {
-          lineStyle: {
-            color: isDark ? '#444' : '#ccc'
-          }
-        },
-        splitLine: {
-          lineStyle: {
-            color: isDark ? '#333' : '#eee'
-          }
+          return value.toFixed(0);
         }
       },
-      {
-        // 右侧Y轴 - 用于价格数据
-        type: 'value',
-        position: 'right',
-        name: '价格',
-        nameLocation: 'middle',
-        nameGap: 50,
-        nameTextStyle: {
-          color: isDark ? '#fff' : '#333',
-          fontSize: 12,
-          fontWeight: 'bold'
-        },
-        axisLabel: {
-          color: isDark ? '#fff' : '#333',
-          fontSize: 10,
-          margin: 8,
-          formatter: function(value: number) {
-            // 根据价格数据范围调整显示格式
-            if (Math.abs(value) >= 1000) {
-              return (value / 1000).toFixed(1) + 'k';
-            }
-            return value.toFixed(2);
-          }
-        },
-        axisLine: {
-          lineStyle: {
-            color: isDark ? '#444' : '#ccc'
-          }
-        },
-        splitLine: {
-          show: false
+      axisLine: {
+        lineStyle: {
+          color: isDark ? '#444' : '#ccc'
+        }
+      },
+      splitLine: {
+        lineStyle: {
+          color: isDark ? '#333' : '#eee'
         }
       }
-    ];
-    
+    },
+    {
+      // 右侧Y轴 - 用于价格数据
+      type: 'value',
+      position: 'right',
+      name: '价格',
+      nameLocation: 'middle',
+      nameGap: 50,
+      nameTextStyle: {
+        color: isDark ? '#fff' : '#333',
+        fontSize: 12,
+        fontWeight: 'bold'
+      },
+      axisLabel: {
+        color: isDark ? '#fff' : '#333',
+        fontSize: 10,
+        margin: 8,
+        formatter: function (value) {
+          // 根据价格数据范围调整显示格式
+          if (Math.abs(value) >= 1000) {
+            return (value / 1000).toFixed(1) + 'k';
+          }
+          return value.toFixed(2);
+        }
+      },
+      axisLine: {
+        lineStyle: {
+          color: isDark ? '#444' : '#ccc'
+        }
+      },
+      splitLine: {
+        show: false
+      }
+    }];
+
+
     // 优化图例显示
     option.legend = {
-      data: chartConfig.series.map(s => s.name),
+      data: chartConfig.series.map((s) => s.name),
       top: 50, // 增加与标题的距离
       left: 'center',
       textStyle: {
@@ -434,8 +434,8 @@ export const generateEChartsOption = (chartConfig: ChartConfig, theme: 'light' |
       itemHeight: 8,
       itemGap: 15,
       // 添加图例分组
-      formatter: function(name: string) {
-        const series = chartConfig.series.find(s => s.name === name);
+      formatter: function (name) {
+        const series = chartConfig.series.find((s) => s.name === name);
         if (series && series.yAxisIndex === 1) {
           return `💰 ${name}`; // 价格数据添加货币符号
         }
@@ -451,7 +451,7 @@ export const generateEChartsOption = (chartConfig: ChartConfig, theme: 'light' |
         color: isDark ? '#fff' : '#333'
       }
     };
-    
+
     option.yAxis = {
       type: 'value',
       axisLabel: {
@@ -468,9 +468,9 @@ export const generateEChartsOption = (chartConfig: ChartConfig, theme: 'light' |
         }
       }
     };
-    
+
     option.legend = {
-      data: chartConfig.series.map(s => s.name),
+      data: chartConfig.series.map((s) => s.name),
       top: 50,
       left: 'center',
       textStyle: {
@@ -482,7 +482,7 @@ export const generateEChartsOption = (chartConfig: ChartConfig, theme: 'light' |
       itemGap: 15
     };
   }
-  
+
   // 配置数据系列 - 针对大数据量优化
   option.series = chartConfig.series.map((series, index) => ({
     name: series.name,
@@ -498,32 +498,32 @@ export const generateEChartsOption = (chartConfig: ChartConfig, theme: 'light' |
     sampling: 'lttb', // 使用LTTB采样算法，提高大数据量时的性能
     animation: false // 大数据量时关闭动画，提高性能
   }));
-  
+
   // 添加通用配置
   option.dataZoom = [
-    {
-      type: 'inside',
-      start: 0,
-      end: 100
-    },
-    {
-      show: true,
-      type: 'slider',
-      xAxisIndex: [0],
-      start: 0,
-      end: 100,
-      bottom: 10,
-      height: 20,
-      borderColor: isDark ? '#444' : '#ccc',
-      backgroundColor: isDark ? '#222' : '#f5f5f5',
-      fillerColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-      handleStyle: {
-        color: isDark ? '#fff' : '#333',
-        borderColor: isDark ? '#666' : '#ccc'
-      }
+  {
+    type: 'inside',
+    start: 0,
+    end: 100
+  },
+  {
+    show: true,
+    type: 'slider',
+    xAxisIndex: [0],
+    start: 0,
+    end: 100,
+    bottom: 10,
+    height: 20,
+    borderColor: isDark ? '#444' : '#ccc',
+    backgroundColor: isDark ? '#222' : '#f5f5f5',
+    fillerColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+    handleStyle: {
+      color: isDark ? '#fff' : '#333',
+      borderColor: isDark ? '#666' : '#ccc'
     }
-  ];
-  
+  }];
+
+
   option.toolbox = {
     feature: {
       saveAsImage: {
@@ -542,69 +542,69 @@ export const generateEChartsOption = (chartConfig: ChartConfig, theme: 'light' |
     right: 20,
     top: 20
   };
-  
+
   option.backgroundColor = isDark ? '#1f1f1f' : '#fff';
-  
+
   console.log('=== ECharts配置生成结束 ===');
   return option;
 };
 
 // 调试X轴配置
-export const debugXAxisConfig = (timeRangeType?: string, xAxisLength?: number) => {
+export const debugXAxisConfig = (timeRangeType, xAxisLength) => {
   console.log('=== X轴配置调试 ===');
   console.log('时间范围类型:', timeRangeType);
   console.log('X轴数据长度:', xAxisLength);
-  
+
   if (timeRangeType === 'quarter' || timeRangeType === 'year') {
     console.log('使用月份刻度配置');
   } else {
     console.log('使用标准时间刻度配置');
   }
-  
+
   console.log('=== X轴配置调试结束 ===');
 };
 
 // 调试年度数据显示
-export const debugYearDataDisplay = (data: PowerData[], timeRangeType?: string, maxDataPoints?: number) => {
+export const debugYearDataDisplay = (data, timeRangeType, maxDataPoints) => {
   if (timeRangeType !== 'year') {
     return;
   }
-  
+
   console.log('=== 年度数据显示调试 ===');
   console.log('原始数据量:', data.length);
   console.log('最大数据点限制:', maxDataPoints);
-  
+
   const yearDistribution = data.reduce((acc, item) => {
     acc[item.year] = (acc[item.year] || 0) + 1;
     return acc;
-  }, {} as Record<number, number>);
-  
+  }, {});
+
   console.log('年度数据分布:', yearDistribution);
-  
+
   if (maxDataPoints && maxDataPoints < data.length) {
     const truncatedData = data.slice(0, maxDataPoints);
     const truncatedYearDistribution = truncatedData.reduce((acc, item) => {
       acc[item.year] = (acc[item.year] || 0) + 1;
       return acc;
-    }, {} as Record<number, number>);
-    
+    }, {});
+
     console.log('截断后数据分布:', truncatedYearDistribution);
     console.log('数据截断比例:', (maxDataPoints / data.length * 100).toFixed(2) + '%');
   }
-  
+
   console.log('=== 年度数据显示调试结束 ===');
 };
 
 // 调试月份刻度生成
-export const debugMonthTicks = (data: PowerData[], timeRangeType?: string) => {
+export const debugMonthTicks = (data, timeRangeType) => {
   if (timeRangeType !== 'quarter' && timeRangeType !== 'year') {
     return;
   }
-  
+
   console.log('=== 月份刻度调试 ===');
   console.log('时间范围类型:', timeRangeType);
   console.log('数据总量:', data.length);
-  
+
   const monthDistribution = data.reduce((acc, item, index) => {
     const monthKey = `${item.year}-${item.month.toString().padStart(2, '0')}`;
     if (!acc[monthKey]) {
@@ -620,34 +620,34 @@ export const debugMonthTicks = (data: PowerData[], timeRangeType?: string) => {
     }
     acc[monthKey].lastIndex = index;
     return acc;
-  }, {} as Record<string, { count: number; firstIndex: number; lastIndex: number }>);
-  
+  }, {});
+
   console.log('月份分布:', monthDistribution);
-  
-  const monthPositions: number[] = [];
-  const monthLabels: string[] = [];
-  
-  Object.keys(monthDistribution).forEach(monthKey => {
+
+  const monthPositions = [];
+  const monthLabels = [];
+
+  Object.keys(monthDistribution).forEach((monthKey) => {
     const monthData = monthDistribution[monthKey];
     monthPositions.push(monthData.firstIndex);
     const [, month] = monthKey.split('-');
     monthLabels.push(`${parseInt(month)}月`);
   });
-  
+
   console.log('月份刻度位置:', monthPositions);
   console.log('月份刻度标签:', monthLabels);
   console.log('=== 月份刻度调试结束 ===');
 };
 
 // 导出图表为图片
-export const exportChartAsImage = (chartInstance: any, filename: string = '电力数据图表') => {
+export const exportChartAsImage = (chartInstance, filename = '电力数据图表') => {
   if (chartInstance) {
     const url = chartInstance.getDataURL({
       type: 'png',
       pixelRatio: 2,
       backgroundColor: '#fff'
     });
-    
+
     const link = document.createElement('a');
     link.download = `${filename}_${new Date().toISOString().slice(0, 10)}.png`;
     link.href = url;
@@ -655,4 +655,4 @@ export const exportChartAsImage = (chartInstance: any, filename: string = '电�
     link.click();
     document.body.removeChild(link);
   }
-}; 
+};

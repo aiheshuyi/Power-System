@@ -1,20 +1,17 @@
-<template>
+﻿<template>
   <a-card title="数据可视化" class="sidebar-card">
     <a-space direction="vertical" style="width: 100%;">
       <div style="font-size: 12px; color: #666;">
         已选择 {{ selectedFeatures.length }} 个特征
       </div>
 
-      <div v-for="(group, groupKey) in featureGroups" :key="groupKey" style="border: 1px solid #d9d9d9; border-radius: 6px; padding: 8px;">
+      <div
+        v-for="(group, groupKey) in featureGroups"
+        :key="groupKey"
+        style="border: 1px solid #d9d9d9; border-radius: 6px; padding: 8px;"
+      >
         <div
-          style="
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            font-weight: bold;
-            color: #333;
-          "
+          style="display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-weight: bold; color: #333;"
           @click="toggleGroup(groupKey)"
         >
           <span>{{ group.title }}</span>
@@ -23,10 +20,7 @@
               {{ group.features.filter((f) => selectedFeatures.includes(f)).length }}/{{ group.features.length }}
             </span>
 
-            <a-button
-              size="small"
-              @click.stop="handleSelectAll(groupKey)"
-            >
+            <a-button size="small" @click.stop="handleSelectAll(groupKey)">
               {{ getGroupSelectionStatus(groupKey) === 'all' ? '取消全选' : '全选' }}
             </a-button>
 
@@ -40,7 +34,7 @@
               :checked="selectedFeatures.includes(feature)"
               :disabled="!isFeatureAvailable(feature)"
               style="color: #333; font-size: 12px;"
-              @change="(e: any) => handleFeatureToggle(feature, e?.target?.checked)"
+              @change="(e) => handleFeatureToggle(feature, e?.target?.checked)"
             >
               {{ featureLabels[feature] || feature }}
             </a-checkbox>
@@ -51,21 +45,24 @@
   </a-card>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref } from 'vue';
-import type { TimeRange } from '../types';
 import { featureLabels } from '../utils/chartUtils';
 
-const props = defineProps<{
-  selectedFeatures: string[];
-  timeRange?: TimeRange;
-}>();
+const props = defineProps({
+  selectedFeatures: {
+    type: Array,
+    default: () => []
+  },
+  timeRange: {
+    type: Object,
+    default: null
+  }
+});
 
-const emit = defineEmits<{
-  (e: 'featureChange', features: string[]): void;
-}>();
+const emit = defineEmits(['featureChange']);
 
-const expandedGroups = ref<Record<string, boolean>>({
+const expandedGroups = ref({
   actual: true,
   prediction: true,
   price: true,
@@ -125,50 +122,44 @@ const featureGroups = {
   }
 };
 
-function handleFeatureToggle(feature: string, checked: boolean) {
+function handleFeatureToggle(feature, checked) {
   if (checked) {
-    const newFeatures = [...props.selectedFeatures, feature];
-    emit('featureChange', newFeatures);
+    emit('featureChange', [...props.selectedFeatures, feature]);
   } else {
-    emit('featureChange', props.selectedFeatures.filter((f) => f !== feature));
+    emit('featureChange', props.selectedFeatures.filter((item) => item !== feature));
   }
 }
 
-function handleSelectAll(groupKey: string) {
-  const group = (featureGroups as any)[groupKey] as { features: string[] };
-  const groupFeatures = group.features;
-  const allSelected = groupFeatures.every((f) => props.selectedFeatures.includes(f));
+function handleSelectAll(groupKey) {
+  const groupFeatures = featureGroups[groupKey].features;
+  const allSelected = groupFeatures.every((feature) => props.selectedFeatures.includes(feature));
 
   if (allSelected) {
-    emit(
-      'featureChange',
-      props.selectedFeatures.filter((f) => !groupFeatures.includes(f))
-    );
-  } else {
-    const newSelected = [...props.selectedFeatures];
-    groupFeatures.forEach((f) => {
-      if (!newSelected.includes(f)) newSelected.push(f);
-    });
-    emit('featureChange', newSelected);
+    emit('featureChange', props.selectedFeatures.filter((feature) => !groupFeatures.includes(feature)));
+    return;
   }
+
+  const next = [...props.selectedFeatures];
+  groupFeatures.forEach((feature) => {
+    if (!next.includes(feature)) next.push(feature);
+  });
+  emit('featureChange', next);
 }
 
-function toggleGroup(groupKey: string) {
+function toggleGroup(groupKey) {
   expandedGroups.value[groupKey] = !expandedGroups.value[groupKey];
 }
 
-function getGroupSelectionStatus(groupKey: string): 'none' | 'all' | 'partial' {
-  const group = (featureGroups as any)[groupKey] as { features: string[] };
-  const groupFeatures = group.features;
-  const selectedCount = groupFeatures.filter((f) => props.selectedFeatures.includes(f)).length;
+function getGroupSelectionStatus(groupKey) {
+  const groupFeatures = featureGroups[groupKey].features;
+  const selectedCount = groupFeatures.filter((feature) => props.selectedFeatures.includes(feature)).length;
 
   if (selectedCount === 0) return 'none';
   if (selectedCount === groupFeatures.length) return 'all';
   return 'partial';
 }
 
-function isFeatureAvailable(_feature: string) {
+function isFeatureAvailable() {
   return true;
 }
 </script>
-

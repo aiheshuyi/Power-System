@@ -18,11 +18,11 @@
   <slot v-else />
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, onErrorCaptured } from 'vue';
 
 const hasError = ref(false);
-const errorMessage = ref<string>('');
+const errorMessage = ref('');
 
 function refreshPage() {
   window.location.reload();

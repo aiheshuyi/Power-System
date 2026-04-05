@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <a-card title="时间范围选择" size="small">
     <a-space direction="vertical" style="width: 100%;">
       <div>
@@ -21,8 +21,8 @@
         <div v-if="timeRange.type === 'day'">
           <a-date-picker
             v-model:value="selectedDate"
-            :format="'YYYY-MM-DD'"
-            :placeholder="'选择日期'"
+            format="YYYY-MM-DD"
+            placeholder="选择日期"
             :disabled-date="disabledDate"
             :default-picker-value="defaultPanelDate"
             style="width: 100%;"
@@ -34,8 +34,8 @@
           <a-date-picker
             v-model:value="selectedMonth"
             picker="month"
-            :format="'YYYY-MM'"
-            :placeholder="'选择月份'"
+            format="YYYY-MM"
+            placeholder="选择月份"
             :disabled-date="disabledDate"
             :default-picker-value="defaultPanelDate"
             style="width: 100%;"
@@ -45,18 +45,12 @@
 
         <div v-else-if="timeRange.type === 'quarter'">
           <a-select
-            :value="
-              selectedQuarter ? `${selectedQuarter.year}-Q${selectedQuarter.quarter}` : undefined
-            "
-            :placeholder="'选择季度'"
+            :value="selectedQuarter ? `${selectedQuarter.year}-Q${selectedQuarter.quarter}` : undefined"
+            placeholder="选择季度"
             style="width: 100%;"
             @change="handleQuarterChange"
           >
-            <a-select-option
-              v-for="opt in getQuarterOptions()"
-              :key="opt.value"
-              :value="opt.value"
-            >
+            <a-select-option v-for="opt in getQuarterOptions()" :key="opt.value" :value="opt.value">
               {{ opt.label }}
             </a-select-option>
           </a-select>
@@ -65,7 +59,7 @@
         <div v-else-if="timeRange.type === 'year'">
           <a-select
             :value="selectedYear"
-            :placeholder="'选择年份'"
+            placeholder="选择年份"
             style="width: 100%;"
             @change="handleYearChange"
           >
@@ -78,7 +72,7 @@
         <div v-else-if="timeRange.type === 'custom'">
           <a-range-picker
             v-model:value="customDateRange"
-            :format="'YYYY-MM-DD'"
+            format="YYYY-MM-DD"
             :placeholder="['开始日期', '结束日期']"
             :disabled-date="disabledDate"
             :default-picker-value="defaultPanelDate"
@@ -95,37 +89,39 @@
   </a-card>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { computed, ref, watch } from 'vue';
 import dayjs from 'dayjs';
 import quarterOfYear from 'dayjs/plugin/quarterOfYear';
 import { getActualDataRange, getAvailableTimeOptions } from '../utils/dataUtils';
-import type { PowerData, TimeRange } from '../types';
 
 dayjs.extend(quarterOfYear);
 
-const props = defineProps<{
-  timeRange: TimeRange;
-  onTimeRangeChange?: (timeRange: TimeRange) => void;
-  data: PowerData[];
-}>();
+const props = defineProps({
+  timeRange: {
+    type: Object,
+    required: true
+  },
+  onTimeRangeChange: {
+    type: Function,
+    default: null
+  },
+  data: {
+    type: Array,
+    default: () => []
+  }
+});
 
-const emit = defineEmits<{
-  (e: 'timeRangeChange', value: TimeRange): void;
-}>();
+const emit = defineEmits(['timeRangeChange']);
 
-const selectedDate = ref<dayjs.Dayjs | null>(null);
-const selectedMonth = ref<dayjs.Dayjs | null>(null);
-const selectedQuarter = ref<{ year: number; quarter: number } | null>(null);
-const selectedYear = ref<number | null>(null);
-const customDateRange = ref<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
+const selectedDate = ref(null);
+const selectedMonth = ref(null);
+const selectedQuarter = ref(null);
+const selectedYear = ref(null);
+const customDateRange = ref(null);
 
-const actualDataRange = computed(() =>
-  props.data.length > 0 ? getActualDataRange(props.data) : null
-);
-
+const actualDataRange = computed(() => (props.data.length > 0 ? getActualDataRange(props.data) : null));
 const availableOptions = computed(() => getAvailableTimeOptions(props.data));
-
 const defaultPanelDate = dayjs('2025-07-01');
 
 watch(
@@ -139,12 +135,12 @@ watch(
   }
 );
 
-function emitChange(next: TimeRange) {
+function emitChange(next) {
   emit('timeRangeChange', next);
   props.onTimeRangeChange?.(next);
 }
 
-function handleTypeChange(type: TimeRange['type']) {
+function handleTypeChange(type) {
   if (!actualDataRange.value) return;
 
   const defaultDate = dayjs(actualDataRange.value.start);
@@ -152,44 +148,39 @@ function handleTypeChange(type: TimeRange['type']) {
   let end = '';
 
   switch (type) {
-    case 'day': {
+    case 'day':
       start = defaultDate.format('YYYY-MM-DD');
       end = defaultDate.format('YYYY-MM-DD');
       break;
-    }
-    case 'month': {
+    case 'month':
       start = defaultDate.startOf('month').format('YYYY-MM-DD');
       end = limitDateToDataRange(defaultDate.endOf('month'), true).format('YYYY-MM-DD');
       break;
-    }
-    case 'quarter': {
+    case 'quarter':
       start = defaultDate.startOf('quarter').format('YYYY-MM-DD');
       end = limitDateToDataRange(defaultDate.endOf('quarter'), true).format('YYYY-MM-DD');
       break;
-    }
-    case 'year': {
+    case 'year':
       start = defaultDate.startOf('year').format('YYYY-MM-DD');
       end = limitDateToDataRange(defaultDate.endOf('year'), true).format('YYYY-MM-DD');
       break;
-    }
-    case 'custom': {
+    case 'custom':
       start = defaultDate.format('YYYY-MM-DD');
       end = defaultDate.format('YYYY-MM-DD');
       break;
-    }
   }
 
   emitChange({ start, end, type });
 }
 
-function disabledDate(date: dayjs.Dayjs) {
+function disabledDate(date) {
   if (!actualDataRange.value) return false;
   const dataStart = dayjs(actualDataRange.value.start);
   const dataEnd = dayjs(actualDataRange.value.end);
   return date.isBefore(dataStart, 'day') || date.isAfter(dataEnd, 'day');
 }
 
-function limitDateToDataRange(date: dayjs.Dayjs, isEndDate = false) {
+function limitDateToDataRange(date, isEndDate = false) {
   if (!actualDataRange.value) return date;
   const dataStart = dayjs(actualDataRange.value.start);
   const dataEnd = dayjs(actualDataRange.value.end);
@@ -200,77 +191,75 @@ function limitDateToDataRange(date: dayjs.Dayjs, isEndDate = false) {
   return date.isBefore(dataStart) ? dataStart : date;
 }
 
-function handleDayChange(date: dayjs.Dayjs | null) {
-  if (date && actualDataRange.value) {
-    const start = date.format('YYYY-MM-DD');
-    const end = date.format('YYYY-MM-DD');
-    selectedDate.value = date;
-    emitChange({ start, end, type: 'day' });
-  }
+function handleDayChange(date) {
+  if (!date || !actualDataRange.value) return;
+  selectedDate.value = date;
+  emitChange({
+    start: date.format('YYYY-MM-DD'),
+    end: date.format('YYYY-MM-DD'),
+    type: 'day'
+  });
 }
 
-function handleMonthChange(date: dayjs.Dayjs | null) {
-  if (date && actualDataRange.value) {
-    const start = date.startOf('month').format('YYYY-MM-DD');
-    const end = limitDateToDataRange(date.endOf('month'), true).format('YYYY-MM-DD');
-    selectedMonth.value = date;
-    emitChange({ start, end, type: 'month' });
-  }
+function handleMonthChange(date) {
+  if (!date || !actualDataRange.value) return;
+  selectedMonth.value = date;
+  emitChange({
+    start: date.startOf('month').format('YYYY-MM-DD'),
+    end: limitDateToDataRange(date.endOf('month'), true).format('YYYY-MM-DD'),
+    type: 'month'
+  });
 }
 
-function handleQuarterChange(value: string) {
-  if (value && actualDataRange.value) {
-    const [year, quarter] = value.split('-Q');
-    const quarterNum = parseInt(quarter);
-    const yearNum = parseInt(year);
+function handleQuarterChange(value) {
+  if (!value || !actualDataRange.value) return;
 
-    const quarterStartMonth = (quarterNum - 1) * 3 + 1;
-    const quarterEndMonth = quarterNum * 3;
+  const [year, quarter] = value.split('-Q');
+  const yearNum = parseInt(year, 10);
+  const quarterNum = parseInt(quarter, 10);
+  const quarterStartMonth = (quarterNum - 1) * 3 + 1;
+  const quarterEndMonth = quarterNum * 3;
 
-    const quarterStartDate = dayjs(
-      `${yearNum}-${quarterStartMonth.toString().padStart(2, '0')}-01`
-    );
-    const quarterEndDate = dayjs(
-      `${yearNum}-${quarterEndMonth.toString().padStart(2, '0')}-01`
-    ).endOf('month');
+  const quarterStartDate = dayjs(`${yearNum}-${String(quarterStartMonth).padStart(2, '0')}-01`);
+  const quarterEndDate = dayjs(`${yearNum}-${String(quarterEndMonth).padStart(2, '0')}-01`).endOf('month');
+  const limitedEndDate = limitDateToDataRange(quarterEndDate, true);
 
-    const limitedEndDate = limitDateToDataRange(quarterEndDate, true);
-
-    selectedQuarter.value = { year: yearNum, quarter: quarterNum };
-    const start = quarterStartDate.format('YYYY-MM-DD');
-    const end = limitedEndDate.format('YYYY-MM-DD');
-    emitChange({ start, end, type: 'quarter' });
-  }
+  selectedQuarter.value = { year: yearNum, quarter: quarterNum };
+  emitChange({
+    start: quarterStartDate.format('YYYY-MM-DD'),
+    end: limitedEndDate.format('YYYY-MM-DD'),
+    type: 'quarter'
+  });
 }
 
-function handleYearChange(year: number | string | null) {
-  if (year && actualDataRange.value) {
-    const yearNum = typeof year === 'string' ? parseInt(year) : year;
-    const yearStart = dayjs(`${yearNum}-01-01`);
-    const yearEnd = dayjs(`${yearNum}-12-31`);
+function handleYearChange(year) {
+  if (!year || !actualDataRange.value) return;
 
-    const limitedEndDate = limitDateToDataRange(yearEnd, true);
+  const yearNum = typeof year === 'string' ? parseInt(year, 10) : year;
+  const yearStart = dayjs(`${yearNum}-01-01`);
+  const yearEnd = dayjs(`${yearNum}-12-31`);
+  const limitedEndDate = limitDateToDataRange(yearEnd, true);
 
-    selectedYear.value = yearNum;
-    const start = yearStart.format('YYYY-MM-DD');
-    const end = limitedEndDate.format('YYYY-MM-DD');
-    emitChange({ start, end, type: 'year' });
-  }
+  selectedYear.value = yearNum;
+  emitChange({
+    start: yearStart.format('YYYY-MM-DD'),
+    end: limitedEndDate.format('YYYY-MM-DD'),
+    type: 'year'
+  });
 }
 
-function handleCustomRangeChange(dates: [dayjs.Dayjs, dayjs.Dayjs] | null) {
-  if (dates && dates.length === 2) {
-    const [startDate, endDate] = dates;
-    customDateRange.value = dates;
-    emitChange({
-      start: startDate.format('YYYY-MM-DD'),
-      end: endDate.format('YYYY-MM-DD'),
-      type: 'custom'
-    });
-  }
+function handleCustomRangeChange(dates) {
+  if (!dates || dates.length !== 2) return;
+  const [startDate, endDate] = dates;
+  customDateRange.value = dates;
+  emitChange({
+    start: startDate.format('YYYY-MM-DD'),
+    end: endDate.format('YYYY-MM-DD'),
+    type: 'custom'
+  });
 }
 
-function getQuarterOptions(): Array<{ value: string; label: string }> {
+function getQuarterOptions() {
   return availableOptions.value.quarters.map(({ year, quarter }) => {
     const quarterStartMonth = (quarter - 1) * 3 + 1;
     const quarterEndMonth = quarter * 3;
@@ -282,8 +271,7 @@ function getQuarterOptions(): Array<{ value: string; label: string }> {
   });
 }
 
-function getYearOptions(): Array<{ value: number; label: string }> {
+function getYearOptions() {
   return availableOptions.value.years.map((year) => ({ value: year, label: `${year}年` }));
 }
 </script>
-

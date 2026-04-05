@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <a-card class="chart-container" :style="{ padding: '20px', margin: '0', height: '100%' }">
     <div
       v-if="loading"
@@ -49,9 +49,7 @@
     <div v-else style="position: relative; width: 100%; height: 100%; padding: 10px; min-height: 0;">
       <div ref="chartEl" class="power-chart-echarts" style="height: 100%; width: 100%;" />
 
-      <div
-        style="position: absolute; top: 10px; right: 10px; z-index: 10;"
-      >
+      <div style="position: absolute; top: 10px; right: 10px; z-index: 10;">
         <a-space>
           <a-button size="small" :icon="h(DownloadOutlined)" type="primary" @click="handleExport">
             导出
@@ -87,13 +85,12 @@
   </a-card>
 </template>
 
-<script setup lang="ts">
+<script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick, h } from 'vue';
 import * as echarts from 'echarts';
 import dayjs from 'dayjs';
 import { ReloadOutlined, DownloadOutlined } from '@ant-design/icons-vue';
 
-import type { PowerData } from '../types';
 import {
   generateChartConfig,
   generateEChartsOption,
@@ -103,66 +100,68 @@ import {
   debugYearDataDisplay
 } from '../utils/chartUtils';
 
-const props = defineProps<{
-  data: PowerData[];
-  selectedFeatures: string[];
-  loading: boolean;
-  error: string | null;
-  theme: 'light' | 'dark';
-  timeRangeType?: string;
-}>();
+const props = defineProps({
+  data: {
+    type: Array,
+    default: () => []
+  },
+  selectedFeatures: {
+    type: Array,
+    default: () => []
+  },
+  loading: {
+    type: Boolean,
+    default: false
+  },
+  error: {
+    type: String,
+    default: null
+  },
+  theme: {
+    type: String,
+    default: 'light'
+  },
+  timeRangeType: {
+    type: String,
+    default: ''
+  }
+});
 
-const emit = defineEmits<{
-  (e: 'refresh'): void;
-}>();
+const emit = defineEmits(['refresh']);
 
-const chartEl = ref<HTMLDivElement | null>(null);
-let chartInstance: echarts.ECharts | null = null;
-let resizeObserver: ResizeObserver | null = null;
+const chartEl = ref(null);
+let chartInstance = null;
+let resizeObserver = null;
 
 const themeColor = computed(() => (props.theme === 'dark' ? '#fff' : '#333'));
-
-const chartConfig = computed(() =>
-  generateChartConfig(props.data, props.selectedFeatures, props.theme, props.timeRangeType)
-);
-
+const chartConfig = computed(() => generateChartConfig(props.data, props.selectedFeatures, props.theme, props.timeRangeType));
 const chartOption = computed(() => generateEChartsOption(chartConfig.value, props.theme));
 
 const shouldShowChart = computed(
-  () =>
-    !props.loading &&
-    !props.error &&
-    props.data.length > 0 &&
-    props.selectedFeatures.length > 0 &&
-    hasValidData.value
+  () => !props.loading && !props.error && props.data.length > 0 && props.selectedFeatures.length > 0 && hasValidData.value
 );
 
-const hasValidData = computed(() => {
-  const cfg = chartConfig.value;
-  return cfg.series.some((series) => series.data.some((v) => v > 0));
-});
+const hasValidData = computed(() => chartConfig.value.series.some((series) => series.data.some((value) => value > 0)));
 
 const showPriceDebug = computed(
-  () =>
-    props.selectedFeatures.includes('现货价格') ||
-    props.selectedFeatures.includes('日前价格')
+  () => props.selectedFeatures.includes('现货价格') || props.selectedFeatures.includes('日前价格')
 );
 
 const priceSpotRange = computed(() => {
   if (!props.data.length) return { min: 0, max: 0 };
-  const arr = props.data.map((d) => d.现货价格);
+  const arr = props.data.map((item) => item.现货价格);
   return { min: Math.min(...arr).toFixed(2), max: Math.max(...arr).toFixed(2) };
 });
 
 const priceDayAheadRange = computed(() => {
   if (!props.data.length) return { min: 0, max: 0 };
-  const arr = props.data.map((d) => d.日前价格);
+  const arr = props.data.map((item) => item.日前价格);
   return { min: Math.min(...arr).toFixed(2), max: Math.max(...arr).toFixed(2) };
 });
 
 const priceDiffRange = computed(() => {
   if (!props.data.length) return { min: 0, max: 0 };
-  const arr = props.data.map((d) => d.价格差值);
+  const arr = props.data.map((item) => item.价格差值);
   return { min: Math.min(...arr).toFixed(2), max: Math.max(...arr).toFixed(2) };
 });
 
@@ -177,23 +176,20 @@ function handleExport() {
 
 function initChart() {
   if (!chartEl.value) return;
-
   if (chartInstance) chartInstance.dispose();
   chartInstance = echarts.init(chartEl.value, undefined, { renderer: 'canvas' });
 }
 
 function renderChart() {
   if (!chartInstance) return;
-
-  // 生成的 option 内部已处理 dark/light 的颜色
   chartInstance.setOption(chartOption.value, true);
   chartInstance.resize();
 }
 
 watch(
   shouldShowChart,
-  async (v) => {
-    if (!v) {
+  async (value) => {
+    if (!value) {
       chartInstance?.dispose();
       chartInstance = null;
       return;
@@ -234,7 +230,6 @@ watch(
 watch(
   () => props.theme,
   async () => {
-    // theme 改变时，直接更新 option 即可
     await nextTick();
     if (chartInstance) renderChart();
   }
@@ -263,4 +258,3 @@ onBeforeUnmount(() => {
   chartInstance = null;
 });
 </script>
-

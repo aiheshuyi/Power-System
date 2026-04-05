@@ -13,4 +13,3 @@ const Root = {
 };
 
 createApp(Root).use(Antd).mount('#app');
-
